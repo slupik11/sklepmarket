@@ -1,101 +1,307 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, ShieldCheck, TrendingUp, Play, CheckCircle, Lock, Phone } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import ListingCard from "@/components/ListingCard";
+import { formatPrice } from "@/lib/utils";
+import type { Listing } from "@/lib/supabase/types";
 
-export default function Home() {
+async function getHomeData() {
+  const supabase = createClient();
+  const [{ data: listings }, { data: all }] = await Promise.all([
+    supabase.from("listings").select("*").eq("status", "active").order("created_at", { ascending: false }).limit(6),
+    supabase.from("listings").select("id, asking_price, status, verified"),
+  ]);
+  const active = all?.filter((l) => l.status === "active") ?? [];
+  return {
+    listings: (listings ?? []) as Listing[],
+    stats: {
+      active: active.length,
+      value: active.reduce((s, l) => s + l.asking_price, 0),
+      verified: active.filter((l) => l.verified).length,
+    },
+  };
+}
+
+export default async function HomePage() {
+  const { listings, stats } = await getHomeData();
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <>
+      {/* ═══════════════════════════════════
+          HERO — dark purple, full bleed
+      ════════════════════════════════════ */}
+      <section className="relative dark-gradient-bg overflow-hidden">
+        {/* Subtle grid overlay */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        {/* Radial glow */}
+        <div aria-hidden className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-violet/10 blur-[120px] rounded-full" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-24">
+          {/* Badge */}
+          <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-violet-glow/30 bg-violet/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-violet-glow">
+            Platforma premium · Transakcje e-commerce
+          </div>
+
+          {/* Headline */}
+          <h1 className="animate-fade-in headline-xl text-white mb-6 max-w-3xl" style={{ animationFillMode: "both" }}>
+            Kupuj i sprzedawaj{" "}
+            <span className="shimmer-text">gotowe sklepy</span>{" "}
+            internetowe
+          </h1>
+
+          {/* Subtext */}
+          <p
+            className="animate-fade-in delay-100 text-lg text-on-dark-faint leading-relaxed max-w-xl mb-10"
+            style={{ animationFillMode: "both", opacity: 0 }}
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Sprawdzone biznesy e-commerce. Pełna instrukcja, film szkoleniowy, wsparcie
+            na każdym etapie transakcji. Dla sprzedających — dyskrecja i NDA.
+          </p>
+
+          {/* CTAs */}
+          <div
+            className="animate-fade-in delay-200 flex flex-wrap gap-3 mb-16"
+            style={{ animationFillMode: "both", opacity: 0 }}
           >
-            Read our docs
-          </a>
+            <Link href="/oferty" className="btn-white-on-dark">
+              Przeglądaj oferty <ArrowRight size={17} />
+            </Link>
+            <Link href="/sprzedaj" className="btn-ghost-on-dark">
+              Sprzedaj swój sklep
+            </Link>
+          </div>
+
+          {/* Stats row — inside dark hero */}
+          <div
+            className="animate-fade-in delay-300 grid grid-cols-3 gap-0 border border-on-dark-faint/20 rounded-xl overflow-hidden"
+            style={{ animationFillMode: "both", opacity: 0 }}
+          >
+            {[
+              { value: stats.active.toString(), label: "Aktywnych ofert", icon: <TrendingUp size={14} /> },
+              { value: formatPrice(stats.value), label: "Łączna wartość", icon: <ShieldCheck size={14} /> },
+              { value: stats.verified.toString(), label: "Zweryfikowanych", icon: <CheckCircle size={14} /> },
+            ].map((s, i) => (
+              <div
+                key={i}
+                className={`card-dark px-6 py-5 rounded-none ${i < 2 ? "border-r border-on-dark-faint/20" : ""}`}
+              >
+                <div className="flex items-center gap-1.5 text-on-dark-muted text-xs font-medium mb-1.5">
+                  {s.icon} {s.label}
+                </div>
+                <p className="stat-number text-white">{s.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* ═══════════════════════════════════
+          SPLIT: Kupujący | Sprzedający
+      ════════════════════════════════════ */}
+      <section className="border-b border-edge">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-edge">
+
+            {/* Dla kupujących */}
+            <div className="px-8 py-14 lg:px-12">
+              <div className="mb-1 text-xs font-bold uppercase tracking-widest text-violet">Kupujący</div>
+              <h2 className="headline-md text-ink mb-4">
+                Inwestujesz w działający biznes
+              </h2>
+              <p className="text-ink-muted leading-relaxed mb-8 max-w-md">
+                Kupujesz sklep z historią sprzedaży, sprawdzonymi dostawcami
+                i gotową bazą klientów — nie projekt, nie pomysł.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                {[
+                  {
+                    icon: <CheckCircle size={18} className="text-violet mt-0.5 flex-shrink-0" />,
+                    title: "Działający sklep z przychodami",
+                    desc: "Weryfikowane dane finansowe, dostęp do Analytics przed zakupem.",
+                  },
+                  {
+                    icon: <Play size={18} className="text-violet mt-0.5 flex-shrink-0" />,
+                    title: "Film instruktażowy 2h",
+                    desc: "Szczegółowy kurs jak prowadzić sklep od pierwszego dnia.",
+                  },
+                  {
+                    icon: <TrendingUp size={18} className="text-violet mt-0.5 flex-shrink-0" />,
+                    title: "Konfiguracja kampanii reklamowych",
+                    desc: "Instrukcja ustawienia Meta Ads i Google Ads pod ten konkretny sklep.",
+                  },
+                  {
+                    icon: <ShieldCheck size={18} className="text-violet mt-0.5 flex-shrink-0" />,
+                    title: "Wsparcie po transakcji",
+                    desc: "Jesteśmy dostępni przez pierwsze 30 dni po przejęciu.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-3">
+                    {item.icon}
+                    <div>
+                      <p className="font-semibold text-ink text-sm">{item.title}</p>
+                      <p className="text-sm text-ink-muted mt-0.5">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/oferty" className="btn-violet text-sm">
+                Zobacz dostępne sklepy <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            {/* Dla sprzedających */}
+            <div className="section-bg px-8 py-14 lg:px-12 relative overflow-hidden">
+              {/* Subtle violet accent */}
+              <div aria-hidden className="absolute top-0 right-0 w-40 h-40 bg-violet/5 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative">
+                <div className="mb-1 text-xs font-bold uppercase tracking-widest text-violet">Sprzedający</div>
+                <h2 className="headline-md text-ink mb-4">
+                  Sprzedaj dyskretnie i bezpiecznie
+                </h2>
+                <p className="text-ink-muted leading-relaxed mb-8 max-w-md">
+                  Nie publikujesz publicznie. Podpisujesz NDA już przy pierwszym kontakcie.
+                  Działamy poufnie na każdym etapie.
+                </p>
+
+                <div className="space-y-3 mb-8">
+                  {[
+                    { step: "01", text: "Wypełniasz krótki formularz" },
+                    { step: "02", text: "Oddzwaniamy do Ciebie" },
+                    { step: "03", text: "Umawiamy spotkanie" },
+                    { step: "04", text: "Podpisujemy NDA" },
+                    { step: "05", text: "Działamy razem" },
+                  ].map((s) => (
+                    <div key={s.step} className="flex items-center gap-3">
+                      <span className="flex-shrink-0 font-mono text-xs font-bold text-violet bg-violet-lighter rounded-md px-2 py-0.5">
+                        {s.step}
+                      </span>
+                      <span className="text-sm text-ink">{s.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 mb-6 text-xs text-ink-muted">
+                  <Lock size={12} className="text-violet" />
+                  Pełna poufność · NDA przy pierwszym kontakcie
+                </div>
+
+                <Link href="/sprzedaj" className="btn-violet text-sm">
+                  Skontaktuj się z nami <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════
+          LISTINGS
+      ════════════════════════════════════ */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-violet">Marketplace</p>
+            <h2 className="headline-md text-ink">Aktualne oferty</h2>
+          </div>
+          <Link href="/oferty" className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-violet hover:text-violet-hover transition-colors">
+            Wszystkie <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        {listings.length === 0 ? (
+          <div className="flex h-56 items-center justify-center rounded-xl border border-edge bg-bg-section">
+            <p className="text-ink-muted">Brak aktywnych ofert — sprawdź wkrótce.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((l) => <ListingCard key={l.id} listing={l} />)}
+          </div>
+        )}
+      </section>
+
+      {/* ═══════════════════════════════════
+          TRUST — dlaczego my
+      ════════════════════════════════════ */}
+      <section className="border-t border-edge section-bg">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-5 gap-10 items-start">
+            <div className="lg:col-span-2">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-violet">Dlaczego SklepMarket</p>
+              <h2 className="headline-md text-ink mb-4">
+                Nie jesteśmy kolejnym marketplace&rsquo;em
+              </h2>
+              <p className="text-ink-muted leading-relaxed">
+                Mamy wieloletnie doświadczenie w branży e-commerce. Wiemy czego szukać,
+                jak weryfikować dane i jak przeprowadzać transakcje które działają dla obu stron.
+              </p>
+            </div>
+
+            <div className="lg:col-span-3 grid sm:grid-cols-2 gap-4">
+              {[
+                { icon: "🔐", title: "NDA przy każdej transakcji", desc: "Dane sprzedającego i kupującego są chronione umową o zachowaniu poufności." },
+                { icon: "📊", title: "Weryfikacja finansów", desc: "Sprawdzamy Google Analytics, przychody i historię zamówień przed publikacją." },
+                { icon: "🎓", title: "Instrukcja + film 2h", desc: "Kupujący dostaje szczegółowy kurs jak przejąć i prowadzić sklep od pierwszego dnia." },
+                { icon: "🤝", title: "Wsparcie post-transakcyjne", desc: "Jesteśmy dostępni przez 30 dni po finalizacji — pytania, problemy, konfiguracja." },
+              ].map((item) => (
+                <div key={item.title} className="card p-5 hover:border-violet/30 hover:shadow-card-hover transition-all duration-200">
+                  <div className="text-2xl mb-3">{item.icon}</div>
+                  <h3 className="font-bold text-ink text-sm mb-1.5">{item.title}</h3>
+                  <p className="text-sm text-ink-muted leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════
+          CTA DARK — sprzedaj sklep
+      ════════════════════════════════════ */}
+      <section className="dark-gradient-bg relative overflow-hidden">
+        <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+          backgroundImage: `linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px)`,
+          backgroundSize: "50px 50px",
+        }} />
+        <div aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-96 h-96 bg-violet/8 blur-[100px] rounded-full" />
+
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+            <div className="max-w-xl">
+              <div className="mb-3 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-on-dark-muted">
+                <Lock size={12} /> Poufna wycena · Bez zobowiązań
+              </div>
+              <h2 className="headline-lg text-white mb-3">
+                Chcesz sprzedać sklep?
+              </h2>
+              <p className="text-on-dark-faint leading-relaxed">
+                Wypełnij formularz. Oddzwaniamy w ciągu 24 godzin.
+                Nie musisz podawać nazwy sklepu — możesz być anonimowy do momentu podpisania NDA.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 flex-shrink-0">
+              <Link href="/sprzedaj" className="btn-white-on-dark">
+                Wyślij zgłoszenie <ArrowRight size={17} />
+              </Link>
+              <div className="flex items-center gap-2 text-xs text-on-dark-faint">
+                <Phone size={12} />
+                Preferujesz telefon? Napisz numer — oddzwonimy.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

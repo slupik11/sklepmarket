@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KupSklep.pl — Marketplace sklepów internetowych
 
-## Getting Started
+Platforma do kupna i sprzedaży gotowych sklepów internetowych. Zbudowana na Next.js 14, Supabase i Tailwind CSS.
 
-First, run the development server:
+## Stack
+
+- **Next.js 14** (App Router, Server Components)
+- **Supabase** (PostgreSQL + Row Level Security)
+- **Tailwind CSS** (custom dark theme)
+- **Resend** (emaile transakcyjne)
+- **Vercel** (deployment)
+
+## Szybki start
+
+### 1. Zainstaluj zależności
+
+```bash
+npm install
+```
+
+### 2. Utwórz projekt w Supabase
+
+1. Idź na [supabase.com](https://supabase.com) i utwórz nowy projekt
+2. Skopiuj **Project URL** i **anon key** z: Project Settings > API
+3. Skopiuj **service_role key** (potrzebne do admin actions)
+
+### 3. Skonfiguruj bazę danych
+
+1. W Supabase Dashboard wejdź w **SQL Editor**
+2. Wklej całą zawartość pliku `supabase/schema.sql`
+3. Kliknij **Run** — tabele i seed data zostaną utworzone
+
+### 4. Skonfiguruj zmienne środowiskowe
+
+```bash
+cp .env.example .env.local
+```
+
+Uzupełnij `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://twoj-projekt.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+RESEND_API_KEY=re_...
+ADMIN_PASSWORD=twoje-bezpieczne-haslo
+```
+
+### 5. Uruchom lokalnie
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Otwórz http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment na Vercel
 
-## Learn More
+1. Push repo na GitHub
+2. Utwórz nowy projekt na vercel.com
+3. Podepnij repo
+4. W Environment Variables dodaj wszystkie zmienne z .env.example
+5. Deploy
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Struktura projektu
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+kupsklep/
+├── app/
+│   ├── page.tsx                 Strona główna
+│   ├── oferty/
+│   │   ├── page.tsx             Lista ofert z filtrami
+│   │   └── [slug]/page.tsx      Pojedyncza oferta
+│   ├── sprzedaj/page.tsx        Formularz sprzedaży
+│   ├── jak-to-dziala/page.tsx   Jak to działa + FAQ
+│   ├── admin/                   Panel admina
+│   └── actions/                 Server Actions (formularze, admin)
+├── components/
+│   ├── Navbar.tsx
+│   ├── Footer.tsx
+│   ├── ListingCard.tsx
+│   ├── ListingFilters.tsx
+│   ├── ContactForm.tsx
+│   ├── SellForm.tsx
+│   ├── Badge.tsx
+│   └── MetricCard.tsx
+├── lib/
+│   ├── supabase/client.ts       Browser Supabase client
+│   ├── supabase/server.ts       Server Supabase client
+│   ├── supabase/types.ts        TypeScript typy
+│   └── utils.ts                 formatPrice, formatRevenue, itp.
+└── supabase/schema.sql          Schema SQL + 8 ofert seed
+```
 
-## Deploy on Vercel
+## Panel admina
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Dostępny pod /admin. Hasło ustawiasz w ADMIN_PASSWORD (.env.local).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Funkcje:
+- Zarządzanie ofertami (dodaj, zmień status, weryfikuj)
+- Lista zapytań kupujących z oznaczaniem jako obsłużone
+- Lista zgłoszeń sprzedaży ze zmianą statusu
+
+## Emaile (Resend)
+
+Emaile wysyłane do kontakt@kupsklep.pl przy:
+- Nowym zapytaniu od kupującego (formularz na stronie oferty)
+- Nowym zgłoszeniu sprzedaży
+
+Bez klucza RESEND_API_KEY emaile są pomijane — aplikacja działa normalnie.
