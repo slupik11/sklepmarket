@@ -12,6 +12,18 @@ export function formatPrice(amount: number): string {
   }).format(amount) + " zł";
 }
 
+export function formatPriceCompact(amount: number): string {
+  if (amount >= 1_000_000) {
+    const val = amount / 1_000_000;
+    return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)).replace(".", ",") + " mln zł";
+  }
+  if (amount >= 1_000) {
+    const val = amount / 1_000;
+    return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(0)) + " tys. zł";
+  }
+  return amount + " zł";
+}
+
 export function formatRevenue(amount: number): string {
   return new Intl.NumberFormat("pl-PL", {
     style: "decimal",

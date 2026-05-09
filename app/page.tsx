@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, TrendingUp, Play, CheckCircle, Lock, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import ListingCard from "@/components/ListingCard";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceCompact } from "@/lib/utils";
 import type { Listing } from "@/lib/supabase/types";
 
 async function getHomeData() {
@@ -81,22 +81,21 @@ export default async function HomePage() {
 
           {/* Stats row — inside dark hero */}
           <div
-            className="animate-fade-in delay-300 grid grid-cols-3 gap-0 border border-on-dark-faint/20 rounded-xl overflow-hidden"
+            className="animate-fade-in delay-300 grid grid-cols-3 divide-x divide-on-dark-faint/20 border border-on-dark-faint/20 rounded-xl overflow-hidden"
             style={{ animationFillMode: "both", opacity: 0 }}
           >
             {[
-              { value: stats.active.toString(), label: "Aktywnych ofert", icon: <TrendingUp size={14} /> },
-              { value: formatPrice(stats.value), label: "Łączna wartość", icon: <ShieldCheck size={14} /> },
-              { value: stats.verified.toString(), label: "Zweryfikowanych", icon: <CheckCircle size={14} /> },
+              { value: stats.active.toString(), label: "Aktywnych ofert" },
+              { value: formatPriceCompact(stats.value), label: "Łączna wartość" },
+              { value: stats.verified.toString(), label: "Zweryfikowanych" },
             ].map((s, i) => (
-              <div
-                key={i}
-                className={`card-dark px-6 py-5 rounded-none ${i < 2 ? "border-r border-on-dark-faint/20" : ""}`}
-              >
-                <div className="flex items-center gap-1.5 text-on-dark-muted text-xs font-medium mb-1.5">
-                  {s.icon} {s.label}
-                </div>
-                <p className="stat-number text-white">{s.value}</p>
+              <div key={i} className="card-dark px-4 py-4 sm:px-7 sm:py-5">
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-on-dark-muted mb-1.5">
+                  {s.label}
+                </p>
+                <p className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-none">
+                  {s.value}
+                </p>
               </div>
             ))}
           </div>

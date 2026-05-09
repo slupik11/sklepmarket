@@ -5,7 +5,8 @@ import { z } from "zod";
 
 const Schema = z.object({
   name: z.string().min(2, "Podaj imię (min. 2 znaki)"),
-  contact: z.string().min(5, "Podaj telefon lub email"),
+  phone: z.string().min(7, "Podaj numer telefonu (min. 7 znaków)"),
+  email: z.string().email("Nieprawidłowy adres email").optional().or(z.literal("")),
   description: z.string().optional(),
 });
 
@@ -21,7 +22,8 @@ export async function submitSellerContact(
 ): Promise<SellerContactState> {
   const raw = {
     name: formData.get("name"),
-    contact: formData.get("contact"),
+    phone: formData.get("phone"),
+    email: formData.get("email") || "",
     description: formData.get("description"),
   };
 
@@ -33,8 +35,7 @@ export async function submitSellerContact(
     };
   }
 
-  const { name, contact, description } = parsed.data;
-  const isEmail = contact.includes("@");
+  const { name, phone, email, description } = parsed.data;
 
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,27 +47,33 @@ export async function submitSellerContact(
     asking_price: 0,
     description: description || "Brak opisu",
     seller_name: name,
-    seller_email: isEmail ? contact : "telefon@kontakt.pl",
-    seller_phone: isEmail ? "" : contact,
+    seller_email: email || "",
+    seller_phone: phone,
     status: "new",
   });
 
   if (error) {
     console.error("DB error:", error.message);
-    return { error: "Wystąpił błąd zapisu. Spróbuj ponownie lub napisz do nas bezpośrednio." };
+    return {
+      error: "Wystąpił błąd zapisu. Spróbuj ponownie lub napisz do nas bezpośrednio.",
+    };
   }
 
   try {
-    await sendNotificationEmails(name, contact, description || "");
+    await sendNotificationEmails(name, phone, email || "", description || "");
   } catch (e) {
     console.error("Email error:", e);
-    // Don't fail the form if email fails
   }
 
   return { success: true };
 }
 
-async function sendNotificationEmails(name: string, contact: string, description: string) {
+async function sendNotificationEmails(
+  name: string,
+  phone: string,
+  email: string,
+  description: string
+) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
 
@@ -89,8 +96,12 @@ async function sendNotificationEmails(name: string, contact: string, description
             <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-weight: 600;">${name}</td>
           </tr>
           <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 0.875rem;">Kontakt</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-weight: 600;">${contact}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 0.875rem;">Telefon</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-weight: 600;">${phone}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 0.875rem;">Email</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #E5E7EB; color: #111827; font-weight: 600;">${email || "<em style='color:#9CA3AF'>Nie podano</em>"}</td>
           </tr>
           <tr>
             <td style="padding: 10px 0; color: #6B7280; font-size: 0.875rem; vertical-align: top;">Opis sklepu</td>
@@ -98,18 +109,17 @@ async function sendNotificationEmails(name: string, contact: string, description
           </tr>
         </table>
         <div style="margin-top: 24px; padding: 16px; background: #F5F3FF; border-radius: 8px; border-left: 3px solid #7C3AED;">
-          <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">⚡ Oddzwoń w ciągu 24 godzin</p>
+          <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">⚡ Zadzwoń pod numer <strong style="color:#111827">${phone}</strong> w ciągu 24 godzin</p>
         </div>
       </div>
     `,
   });
 
   // Confirm to seller if they gave email
-  const isEmail = contact.includes("@");
-  if (isEmail) {
+  if (email) {
     await resend.emails.send({
       from: "SklepMarket.pl <noreply@sklepmarket.pl>",
-      to: contact,
+      to: email,
       subject: "SklepMarket.pl — potwierdzenie zgłoszenia",
       html: `
         <div style="font-family: Inter, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
@@ -122,7 +132,7 @@ async function sendNotificationEmails(name: string, contact: string, description
             Otrzymaliśmy Twoje zgłoszenie, ${name} 👋
           </h2>
           <p style="color: #6B7280; line-height: 1.7; margin-bottom: 20px;">
-            Skontaktujemy się z Tobą w ciągu <strong style="color: #111827;">24 godzin roboczych</strong>.
+            Skontaktujemy się z Tobą telefonicznie w ciągu <strong style="color: #111827;">24 godzin roboczych</strong>.
             Wszystkie informacje pozostają <strong style="color: #111827;">poufne</strong> —
             przed rozmową o szczegółach podpisujemy wspólnie NDA.
           </p>

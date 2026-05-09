@@ -179,7 +179,7 @@ export default function AdminTabs({ listings, inquiries, sellRequests }: Props) 
           <table className="w-full text-sm">
             <thead className="border-b border-edge bg-bg-section">
               <tr>
-                {["Sklep", "Sprzedający", "Przychód", "Cena", "Status", "Data"].map((h) => (
+                {["Imię", "Telefon", "Email", "Opis", "Status", "Data"].map((h) => (
                   <th key={h} className={thCls}>{h}</th>
                 ))}
               </tr>
@@ -187,16 +187,43 @@ export default function AdminTabs({ listings, inquiries, sellRequests }: Props) 
             <tbody className="divide-y divide-edge">
               {sellRequests.map((req) => (
                 <tr key={req.id} className="hover:bg-bg-section transition-colors">
-                  <td className={tdCls}>
-                    <div className="font-medium text-ink">{req.shop_name}</div>
-                    <div className="text-xs text-ink-faint mt-0.5">{req.platform}</div>
+                  <td className={`${tdCls} font-medium text-ink whitespace-nowrap`}>
+                    {req.seller_name}
                   </td>
                   <td className={tdCls}>
-                    <div className="text-ink">{req.seller_name}</div>
-                    <div className="text-xs text-ink-faint">{req.seller_email}</div>
+                    {req.seller_phone ? (
+                      <a
+                        href={`tel:${req.seller_phone}`}
+                        className="font-semibold text-violet hover:text-violet-hover transition-colors whitespace-nowrap"
+                      >
+                        {req.seller_phone}
+                      </a>
+                    ) : (
+                      <span className="text-ink-faint">—</span>
+                    )}
                   </td>
-                  <td className={`${tdCls} text-ink-muted`}>{formatRevenue(req.monthly_revenue)}</td>
-                  <td className={`${tdCls} font-semibold text-violet`}>{formatPrice(req.asking_price)}</td>
+                  <td className={tdCls}>
+                    {req.seller_email ? (
+                      <a
+                        href={`mailto:${req.seller_email}`}
+                        className="text-ink-muted hover:text-violet transition-colors"
+                      >
+                        {req.seller_email}
+                      </a>
+                    ) : (
+                      <span className="text-ink-faint">—</span>
+                    )}
+                  </td>
+                  <td className={`${tdCls} text-ink-muted max-w-[220px]`}>
+                    <span
+                      className="block truncate"
+                      title={req.description}
+                    >
+                      {req.description === "Brak opisu" ? (
+                        <span className="text-ink-faint italic">Brak opisu</span>
+                      ) : req.description}
+                    </span>
+                  </td>
                   <td className={tdCls}>
                     <select
                       value={req.status}

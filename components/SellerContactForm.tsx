@@ -2,15 +2,26 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { submitSellerContact, type SellerContactState } from "@/app/actions/seller-contact";
-import { CheckCircle, Loader2, Lock, Phone } from "lucide-react";
+import { CheckCircle, Loader2, Lock, Mail, Phone } from "lucide-react";
 
 const initialState: SellerContactState = {};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="btn-violet w-full justify-center py-3.5 text-[0.9375rem] disabled:opacity-60">
-      {pending ? <><Loader2 size={18} className="animate-spin" />Wysyłanie...</> : "Wyślij zgłoszenie"}
+    <button
+      type="submit"
+      disabled={pending}
+      className="btn-violet w-full justify-center py-3.5 text-[0.9375rem] disabled:opacity-60"
+    >
+      {pending ? (
+        <>
+          <Loader2 size={18} className="animate-spin" />
+          Wysyłanie...
+        </>
+      ) : (
+        "Wyślij zgłoszenie"
+      )}
     </button>
   );
 }
@@ -42,6 +53,7 @@ export default function SellerContactForm() {
 
   return (
     <form action={action} className="space-y-4">
+      {/* Imię */}
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-ink">
           Imię <span className="text-violet">*</span>
@@ -53,26 +65,62 @@ export default function SellerContactForm() {
           autoComplete="given-name"
           className={err("name") ? "border-red-400" : ""}
         />
-        {err("name") && <p className="mt-1 text-xs text-red-500">{err("name")}</p>}
+        {err("name") && (
+          <p className="mt-1 text-xs text-red-500">{err("name")}</p>
+        )}
       </div>
 
+      {/* Telefon */}
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-ink">
-          Telefon lub email <span className="text-violet">*</span>
+          Numer telefonu <span className="text-violet">*</span>
         </label>
         <div className="relative">
-          <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+          <Phone
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
+          />
           <input
-            name="contact"
-            type="text"
-            placeholder="+48 600 000 000 lub jan@firma.pl"
-            autoComplete="tel email"
-            className={`pl-9 ${err("contact") ? "border-red-400" : ""}`}
+            name="phone"
+            type="tel"
+            placeholder="+48 600 000 000"
+            autoComplete="tel"
+            className={`pl-9 ${err("phone") ? "border-red-400" : ""}`}
           />
         </div>
-        {err("contact") && <p className="mt-1 text-xs text-red-500">{err("contact")}</p>}
+        {err("phone") && (
+          <p className="mt-1 text-xs text-red-500">{err("phone")}</p>
+        )}
       </div>
 
+      {/* Email */}
+      <div>
+        <label className="mb-1.5 block text-sm font-semibold text-ink">
+          Email{" "}
+          <span className="text-ink-faint font-normal">(opcjonalnie)</span>
+        </label>
+        <div className="relative">
+          <Mail
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
+          />
+          <input
+            name="email"
+            type="email"
+            placeholder="jan@firma.pl"
+            autoComplete="email"
+            className={`pl-9 ${err("email") ? "border-red-400" : ""}`}
+          />
+        </div>
+        {err("email") && (
+          <p className="mt-1 text-xs text-red-500">{err("email")}</p>
+        )}
+        <p className="mt-1 text-xs text-ink-faint">
+          Podaj email jeśli chcesz otrzymać potwierdzenie zgłoszenia.
+        </p>
+      </div>
+
+      {/* Opis */}
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-ink">
           Krótki opis sklepu{" "}

@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
                 <Store size={16} className="text-white" />
               </div>
               <div>
-                <span className="font-bold text-ink"><span className="text-violet">Kup</span>Sklep.pl</span>
+                <span className="font-bold text-ink">Sklep<span className="text-violet">Market</span>.pl</span>
                 <span className="ml-2 rounded-md bg-violet-lighter px-2 py-0.5 text-xs font-medium text-violet">Admin</span>
               </div>
             </div>
