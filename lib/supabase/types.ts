@@ -44,6 +44,22 @@ export type SellRequest = {
   created_at: string;
 };
 
+export type BlogPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  featured_image: string | null;
+  author_name: string;
+  category: string;
+  tags: string[];
+  published: boolean;
+  views: number;
+  created_at: string;
+  updated_at: string;
+};
+
 // Minimal Database type for Supabase client
 // Using 'any' for update/insert to avoid overly strict type constraints
 export type Database = {

@@ -1,4 +1,4 @@
--- KupSklep.pl — Supabase Schema
+-- SklepMarket.pl — Supabase Schema
 -- Wklej ten plik w SQL Editor w Supabase Dashboard
 
 -- ============================
@@ -236,4 +236,93 @@ Co wyróżnia sklep:
 
 Sprzedaż z powodu planowanej relokacji do innego kraju.',
   'Akcesoria do domu', 'WooCommerce', 19500, 175500, 41, 'active', true, '{}', 'sprzedajacy8@example.com', 'przytulnie-pl-tekstylia-handmade'
+);
+
+-- ============================
+-- BLOG POSTS
+-- ============================
+
+create table if not exists blog_posts (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  title text not null,
+  excerpt text not null,
+  content text not null,
+  featured_image text,
+  author_name text not null default 'SklepMarket Team',
+  category text not null default 'Poradniki',
+  tags text[] default '{}',
+  published boolean default false,
+  views integer default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists blog_posts_slug_idx on blog_posts(slug);
+create index if not exists blog_posts_published_idx on blog_posts(published);
+create index if not exists blog_posts_category_idx on blog_posts(category);
+create index if not exists blog_posts_created_at_idx on blog_posts(created_at desc);
+
+-- RLS
+alter table blog_posts enable row level security;
+create policy "Public read published posts" on blog_posts for select using (published = true);
+create policy "Anon insert blog" on blog_posts for insert with check (true);
+create policy "Anon update blog" on blog_posts for update using (true);
+create policy "Anon delete blog" on blog_posts for delete using (true);
+
+-- Seed: 2 przykładowe posty
+insert into blog_posts (slug, title, excerpt, content, category, published, author_name) values
+(
+  'jak-wycenic-sklep-internetowy',
+  'Jak wycenić sklep internetowy przed sprzedażą?',
+  'Poznaj sprawdzone metody wyceny sklepu e-commerce. Dowiedz się, jakie czynniki wpływają na cenę i jak przygotować sklep do sprzedaży, żeby uzyskać najlepszą ofertę.',
+  '<h2>Metody wyceny sklepu internetowego</h2>
+<p>Wycena sklepu e-commerce to proces wymagający uwzględnienia wielu czynników. W Polsce najczęściej stosuje się dwie główne metody.</p>
+<h3>1. Wielokrotność miesięcznego zysku (SDE Multiple)</h3>
+<p>Najpopularniejsza metoda w branży e-commerce. Wartość sklepu = <strong>miesięczny zysk netto × mnożnik</strong>. Mnożnik zazwyczaj wynosi 20–40x dla sklepów z historią poniżej 2 lat i 30–60x dla stabilnych biznesów.</p>
+<h3>2. Wielokrotność rocznego przychodu</h3>
+<p>Stosowana gdy marże są trudne do zweryfikowania. Wartość sklepu = <strong>roczny przychód × 0,3–1,5x</strong>, w zależności od kategorii, marży i potencjału wzrostu.</p>
+<h2>Co podnosi wartość sklepu?</h2>
+<ul>
+<li><strong>Stabilna historia przychodów</strong> — minimum 12 miesięcy danych</li>
+<li><strong>Zdywersyfikowane kanały sprzedaży</strong> — nie tylko jeden kanał reklamowy</li>
+<li><strong>Własna baza klientów</strong> — lista emailowa, wysoki % powrotnych klientów</li>
+<li><strong>Udokumentowane procesy</strong> — SOPy, automatyzacje, niezależność od właściciela</li>
+<li><strong>Silna marka</strong> — opinie, media społecznościowe, SEO</li>
+</ul>
+<h2>Jak przygotować sklep do sprzedaży?</h2>
+<p>Przygotowanie sklepu do sprzedaży powinno zacząć się minimum 6 miesięcy przed planowaną transakcją. Skup się na dokumentacji finansowej, optymalizacji procesów i czyszczeniu danych.</p>',
+  'Poradniki',
+  true,
+  'SklepMarket Team'
+),
+(
+  '10-bledow-przy-kupnie-sklepu',
+  '10 błędów przy kupnie gotowego sklepu online',
+  'Unikaj najczęstszych pułapek przy zakupie sklepu internetowego. Lista błędów, które mogą kosztować Cię tysiące złotych i miesiące frustracji.',
+  '<h2>Najczęstsze błędy kupujących sklepy online</h2>
+<p>Kupno gotowego sklepu to świetna inwestycja — ale tylko jeśli unikniesz podstawowych błędów w procesie due diligence.</p>
+<h3>1. Brak weryfikacji danych finansowych</h3>
+<p>Nie kupuj na podstawie screenshots z panelu sprzedającego. Żądaj dostępu do Google Analytics, konta bankowego i systemu zamówień za minimum 12 miesięcy.</p>
+<h3>2. Ignorowanie sezonowości</h3>
+<p>Sklep może wyglądać świetnie w Q4, a generować 30% tych przychodów w Q2. Zawsze analizuj dane miesięcznie za cały rok.</p>
+<h3>3. Brak analizy źródeł ruchu</h3>
+<p>Jeśli 80% ruchu pochodzi z jednego źródła (np. jednej frazy SEO lub jednej kampanii reklamowej), to ogromne ryzyko. Dywersyfikacja źródeł to klucz do stabilności.</p>
+<h3>4. Pominięcie kwestii prawnych</h3>
+<p>Umowa kupna-sprzedaży, transfer domeny, praw do marki, bazy klientów (RODO) — każdy z tych elementów wymaga uwagi prawnika.</p>
+<h3>5. Przepłacenie za potencjał, nie wyniki</h3>
+<p>Płać za udokumentowane wyniki, nie za „potencjał". Każdy sprzedający powie, że sklep ma ogromny potencjał wzrostu.</p>
+<h3>6. Brak planu na pierwsze 90 dni</h3>
+<p>Co zrobisz w pierwszych 3 miesiącach? Bez planu łatwo o paraliż decyzyjny i utratę momentum sklepu.</p>
+<h3>7. Zakup bez wsparcia po transakcji</h3>
+<p>Zadbaj o to, żeby sprzedający był dostępny przez minimum 30 dni po zakupie. To standard w profesjonalnych transakcjach.</p>
+<h3>8. Ignorowanie reputacji online</h3>
+<p>Sprawdź opinie na Google, Allegro, Trustpilot. Negatywna reputacja jest bardzo trudna do naprawienia.</p>
+<h3>9. Brak analizy konkurencji</h3>
+<p>Ile sklepów sprzedaje podobne produkty? Jaki mają share of voice? Czy bariera wejścia jest wystarczająco wysoka?</p>
+<h3>10. Emocjonalne podejście do negocjacji</h3>
+<p>Zakochanie się w sklepie to największa pułapka. Zawsze miej BATNA (najlepszą alternatywę) i bądź gotowy odejść od stołu.</p>',
+  'Poradniki',
+  true,
+  'SklepMarket Team'
 );

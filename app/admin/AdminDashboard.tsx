@@ -2,14 +2,53 @@ import { createClient } from "@/lib/supabase/server";
 import AdminTabs from "./AdminTabs";
 import { adminLogout } from "./login/actions";
 import { Store } from "lucide-react";
+import type { Listing, Inquiry, SellRequest, BlogPost } from "@/lib/supabase/types";
 
 export default async function AdminDashboard() {
   const supabase = createClient();
-  const [{ data: listings }, { data: inquiries }, { data: sellRequests }] = await Promise.all([
+  const [
+    { data: listings },
+    { data: inquiries },
+    { data: sellRequests },
+    { data: blogPosts },
+  ] = await Promise.all([
     supabase.from("listings").select("*").order("created_at", { ascending: false }),
     supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
     supabase.from("sell_requests").select("*").order("created_at", { ascending: false }),
+    supabase.from("blog_posts").select("*").order("created_at", { ascending: false }),
   ]);
+
+  const l = (listings ?? []) as Listing[];
+  const inq = (inquiries ?? []) as Inquiry[];
+  const sr = (sellRequests ?? []) as SellRequest[];
+  const bp = (blogPosts ?? []) as BlogPost[];
+
+  const stats = [
+    {
+      label: "Aktywne oferty",
+      value: l.filter((x) => x.status === "active").length,
+      sub: `z ${l.length} całkowitych`,
+      color: "text-violet",
+    },
+    {
+      label: "Nieobsłużone zapytania",
+      value: inq.filter((x) => !x.handled).length,
+      sub: `z ${inq.length} całkowitych`,
+      color: "text-violet",
+    },
+    {
+      label: "Nowe zgłoszenia sprzedaży",
+      value: sr.filter((x) => x.status === "new").length,
+      sub: `z ${sr.length} całkowitych`,
+      color: "text-amber-600",
+    },
+    {
+      label: "Opublikowane posty",
+      value: bp.filter((x) => x.published).length,
+      sub: `z ${bp.length} całkowitych`,
+      color: "text-emerald-600",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-bg-section">
@@ -22,8 +61,12 @@ export default async function AdminDashboard() {
                 <Store size={16} className="text-white" />
               </div>
               <div>
-                <span className="font-bold text-ink">Sklep<span className="text-violet">Market</span>.pl</span>
-                <span className="ml-2 rounded-md bg-violet-lighter px-2 py-0.5 text-xs font-medium text-violet">Admin</span>
+                <span className="font-bold text-ink">
+                  Sklep<span className="text-violet">Market</span>.pl
+                </span>
+                <span className="ml-2 rounded-md bg-violet-lighter px-2 py-0.5 text-xs font-medium text-violet">
+                  Admin
+                </span>
               </div>
             </div>
             <form action={adminLogout}>
@@ -36,24 +79,22 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Stats */}
-        <div className="mb-8 grid grid-cols-3 gap-4">
-          {[
-            { label: "Oferty", value: listings?.length ?? 0, color: "text-violet" },
-            { label: "Zapytania", value: inquiries?.length ?? 0, color: "text-emerald-600" },
-            { label: "Zgłoszenia sprzedaży", value: sellRequests?.length ?? 0, color: "text-amber-600" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-edge bg-white p-5 text-center shadow-card">
-              <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="mt-1 text-sm text-ink-muted">{s.label}</p>
+        {/* Stats — 4 cards */}
+        <div className="mb-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl border border-edge bg-white p-5 shadow-card">
+              <p className="text-xs font-semibold text-ink-faint mb-2 leading-tight">{s.label}</p>
+              <p className={`text-3xl font-black tracking-tight ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-ink-faint mt-1">{s.sub}</p>
             </div>
           ))}
         </div>
 
         <AdminTabs
-          listings={listings ?? []}
-          inquiries={inquiries ?? []}
-          sellRequests={sellRequests ?? []}
+          listings={l}
+          inquiries={inq}
+          sellRequests={sr}
+          blogPosts={bp}
         />
       </div>
     </div>

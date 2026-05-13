@@ -25,8 +25,40 @@ async function getHomeData() {
 export default async function HomePage() {
   const { listings, stats } = await getHomeData();
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://sklepmarket.pl/#website",
+        "url": "https://sklepmarket.pl",
+        "name": "SklepMarket.pl",
+        "description": "Marketplace sklepów internetowych w Polsce",
+        "inLanguage": "pl-PL",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": { "@type": "EntryPoint", "urlTemplate": "https://sklepmarket.pl/oferty?q={search_term_string}" },
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://sklepmarket.pl/#organization",
+        "name": "SklepMarket.pl",
+        "url": "https://sklepmarket.pl",
+        "logo": { "@type": "ImageObject", "url": "https://sklepmarket.pl/logo.png" },
+        "contactPoint": { "@type": "ContactPoint", "email": "kontakt@sklepmarket.pl", "contactType": "customer service" },
+        "sameAs": [],
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* ═══════════════════════════════════
           HERO — dark purple, full bleed
       ════════════════════════════════════ */}
@@ -297,6 +329,107 @@ export default async function HomePage() {
                 <Phone size={12} />
                 Preferujesz telefon? Napisz numer — oddzwonimy.
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════
+          SEO CONTENT — tekst dla robotów
+      ════════════════════════════════════ */}
+      <section className="border-t border-edge">
+        <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:px-8">
+          <h2 className="headline-md text-ink mb-4">
+            Marketplace Sklepów Internetowych — Kup lub Sprzedaj Sklep Online
+          </h2>
+          <div className="grid md:grid-cols-2 gap-10 text-sm text-ink-muted leading-relaxed">
+            <div>
+              <h3 className="font-bold text-ink mb-3 text-base">Dlaczego warto kupić gotowy sklep?</h3>
+              <p className="mb-4">
+                Kupno gotowego sklepu internetowego to najszybsza droga do biznesu e-commerce.
+                Na SklepMarket.pl znajdziesz zweryfikowane sklepy z udokumentowanymi przychodami,
+                sprawdzoną bazą klientów i działającymi kanałami sprzedaży.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Natychmiastowy start — sklep generuje przychody od pierwszego dnia",
+                  "Zweryfikowane dane finansowe przed zakupem",
+                  "Film instruktażowy 2h + konfiguracja kampanii reklamowych",
+                  "Wsparcie po transakcji przez 30 dni",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="text-violet mt-0.5 flex-shrink-0">→</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold text-ink mb-3 text-base">Popularne kategorie sklepów</h3>
+              <ul className="space-y-1.5 mb-4">
+                {[
+                  "Sklepy dropshipping — biznes bez magazynu",
+                  "Sklepy Shopify — gotowe platformy z integracjami",
+                  "Sklepy WooCommerce — pełna kontrola oparta na WordPress",
+                  "Sklepy z kosmetykami, elektroniką, akcesoriami domowymi",
+                  "Sklepy z produktami cyfrowymi — automatyczna sprzedaż 24/7",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="text-violet mt-0.5 flex-shrink-0">→</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <h3 className="font-bold text-ink mb-2 text-base">Jak sprzedać sklep?</h3>
+              <p>
+                Proces jest prosty i dyskretny. Wypełniasz krótki formularz, my oddzwaniamy
+                w 24h, umawiamy spotkanie i podpisujemy NDA — dopiero wtedy rozmawiamy o detalach.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-10 text-sm text-ink-muted leading-relaxed mt-10 pt-10 border-t border-edge">
+            <div>
+              <h3 className="font-bold text-ink mb-3 text-base">Ile kosztuje gotowy sklep online?</h3>
+              <p className="mb-3">
+                Ceny sklepów internetowych zależą od wielu czynników: miesięcznego przychodu,
+                marży, historii, platformy i potencjału wzrostu. Typowy zakres to
+                <strong className="text-ink"> 20–60-krotność</strong> miesięcznego zysku netto.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Małe sklepy (do 5k/mies.) — od 30 000 do 100 000 zł",
+                  "Średnie sklepy (5–20k/mies.) — od 100 000 do 400 000 zł",
+                  "Duże sklepy (20k+/mies.) — od 400 000 zł wzwyż",
+                  "Wycena bezpłatna — skontaktuj się z nami",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="text-violet mt-0.5 flex-shrink-0">→</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold text-ink mb-3 text-base">Dlaczego SklepMarket, nie samodzielna sprzedaż?</h3>
+              <p className="mb-3">
+                Samodzielna sprzedaż sklepu zajmuje średnio 6–12 miesięcy i wiąże się z ryzykiem
+                spotkania niezdecydowanych kupujących lub oszustów. My weryfikujemy kupujących,
+                pośredniczymy w transakcji i zapewniamy bezpieczeństwo obu stron.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Baza sprawdzonych kupujących gotowych do inwestycji",
+                  "NDA i obsługa prawna przy każdej transakcji",
+                  "Średni czas sprzedaży 30–60 dni",
+                  "Pełna dyskrecja — nikt nie dowie się, że sprzedajesz",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="text-violet mt-0.5 flex-shrink-0">→</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
