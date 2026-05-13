@@ -1,17 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { formatPrice, formatRevenue } from "@/lib/utils";
 import {
   updateListingStatus,
   toggleListingVerified,
   updateSellRequestStatus,
   markInquiryHandled,
+  deleteSellRequest,
+  updateSellRequestNote,
+  updateSellRequestTags,
+  deleteInquiry,
+  updateInquiryNote,
 } from "@/app/actions/admin";
 import type { Listing, Inquiry, SellRequest, BlogPost } from "@/lib/supabase/types";
 import AddListingModal from "./AddListingModal";
 import BlogManager from "./BlogManager";
-import { Plus, ExternalLink, ChevronDown, ChevronUp, Phone, Mail } from "lucide-react";
+import {
+  Plus,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Phone,
+  Mail,
+  Trash2,
+  Save,
+  Tag,
+  FileText,
+} from "lucide-react";
 
 interface Props {
   listings: Listing[];
@@ -45,6 +61,16 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
   const [activeTab, setActiveTab] = useState("oferty");
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedSell, setExpandedSell] = useState<string | null>(null);
+  const [expandedInq, setExpandedInq] = useState<string | null>(null);
+
+  // Local edit state for sell request notes & tags
+  const [sellNotes, setSellNotes] = useState<Record<string, string>>({});
+  const [sellTags, setSellTags] = useState<Record<string, string>>({});
+
+  // Local edit state for inquiry notes
+  const [inqNotes, setInqNotes] = useState<Record<string, string>>({});
+
+  const [isPending, startTransition] = useTransition();
 
   const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ink-faint";
   const tdCls = "px-4 py-3";
@@ -55,6 +81,49 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
     sprzedajacy: sellRequests.length,
     blog: blogPosts.length,
   };
+
+  // ── helpers ──────────────────────────────────────
+
+  function getSellNote(req: SellRequest) {
+    return sellNotes[req.id] ?? req.notes ?? "";
+  }
+
+  function getSellTags(req: SellRequest) {
+    if (req.id in sellTags) return sellTags[req.id];
+    return req.admin_tags?.join(", ") ?? "";
+  }
+
+  function getInqNote(inq: Inquiry) {
+    return inqNotes[inq.id] ?? inq.notes ?? "";
+  }
+
+  function handleSellNoteBlur(req: SellRequest) {
+    const note = getSellNote(req);
+    startTransition(() => updateSellRequestNote(req.id, note));
+  }
+
+  function handleSellTagsSave(req: SellRequest) {
+    const raw = getSellTags(req);
+    const tags = raw.split(",").map((t) => t.trim()).filter(Boolean);
+    startTransition(() => updateSellRequestTags(req.id, tags));
+  }
+
+  function handleDeleteSell(req: SellRequest) {
+    if (!confirm(`Usunąć zgłoszenie od "${req.seller_name}"?`)) return;
+    startTransition(() => deleteSellRequest(req.id));
+  }
+
+  function handleInqNoteBlur(inq: Inquiry) {
+    const note = getInqNote(inq);
+    startTransition(() => updateInquiryNote(inq.id, note));
+  }
+
+  function handleDeleteInq(inq: Inquiry) {
+    if (!confirm(`Usunąć zapytanie od "${inq.buyer_name}"?`)) return;
+    startTransition(() => deleteInquiry(inq.id));
+  }
+
+  // ── render ───────────────────────────────────────
 
   return (
     <>
@@ -155,44 +224,132 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
 
       {/* ── ZAPYTANIA ───────────────────────────── */}
       {activeTab === "zapytania" && (
-        <div className="overflow-x-auto rounded-xl border border-edge bg-white shadow-card">
-          <table className="w-full text-sm">
-            <thead className="border-b border-edge bg-bg-section">
-              <tr>
-                {["Kupujący", "Email", "Telefon", "Wiadomość", "Data", "Status"].map((h) => (
-                  <th key={h} className={thCls}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge">
-              {inquiries.map((inq) => (
-                <tr key={inq.id} className={`hover:bg-bg-section transition-colors ${inq.handled ? "opacity-50" : ""}`}>
-                  <td className={`${tdCls} font-medium text-ink`}>{inq.buyer_name}</td>
-                  <td className={`${tdCls} text-ink-muted`}>{inq.buyer_email}</td>
-                  <td className={`${tdCls} text-ink-muted`}>{inq.buyer_phone}</td>
-                  <td className={`${tdCls} text-ink-muted max-w-[240px] truncate`}>{inq.message}</td>
-                  <td className={`${tdCls} text-xs text-ink-faint whitespace-nowrap`}>
-                    {new Date(inq.created_at).toLocaleDateString("pl-PL")}
-                  </td>
-                  <td className={tdCls}>
+        <div className="space-y-3">
+          {inquiries.length === 0 && (
+            <div className="rounded-xl border border-edge bg-white py-14 text-center text-ink-muted shadow-card">
+              Brak zapytań
+            </div>
+          )}
+          {inquiries.map((inq) => {
+            const isExpanded = expandedInq === inq.id;
+            return (
+              <div
+                key={inq.id}
+                className={`rounded-xl border border-edge bg-white shadow-card overflow-hidden transition-shadow hover:shadow-card-hover ${inq.handled ? "opacity-60" : ""}`}
+              >
+                {/* Collapsed row */}
+                <div className="flex items-center gap-4 px-5 py-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="font-semibold text-ink">{inq.buyer_name}</span>
+                      {inq.handled ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          ✓ Obsłużone
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          Nowe
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-0.5 text-xs text-ink-muted mt-1">
+                      {inq.buyer_email && (
+                        <span className="flex items-center gap-1 truncate">
+                          <Mail size={10} className="text-violet flex-shrink-0" />
+                          <span className="truncate">{inq.buyer_email}</span>
+                        </span>
+                      )}
+                      {inq.buyer_phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone size={10} className="text-violet" />
+                          {inq.buyer_phone}
+                        </span>
+                      )}
+                      <span className="text-ink-faint">
+                        {new Date(inq.created_at).toLocaleDateString("pl-PL")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => markInquiryHandled(inq.id, !inq.handled)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      disabled={isPending}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
                         inq.handled
-                          ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-                          : "border border-edge text-ink-muted hover:bg-bg-section"
+                          ? "bg-bg-section border border-edge text-ink-muted hover:bg-bg-section"
+                          : "bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
                       }`}
                     >
-                      {inq.handled ? "✓ Obsłużone" : "Obsłuż"}
+                      {inq.handled ? "Cofnij" : "Obsłuż"}
                     </button>
-                  </td>
-                </tr>
-              ))}
-              {inquiries.length === 0 && (
-                <tr><td colSpan={6} className="py-10 text-center text-ink-muted">Brak zapytań</td></tr>
-              )}
-            </tbody>
-          </table>
+                    <button
+                      onClick={() => setExpandedInq(isExpanded ? null : inq.id)}
+                      className="flex items-center gap-1 rounded-lg border border-edge px-3 py-1.5 text-xs font-medium text-ink-muted hover:bg-bg-section transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      {isExpanded ? "Ukryj" : "Szczegóły"}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteInq(inq)}
+                      disabled={isPending}
+                      title="Usuń"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-edge text-ink-muted hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-40"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="border-t border-edge bg-bg-section px-5 py-4 space-y-4">
+                    {/* Message */}
+                    <div>
+                      <p className="text-xs text-ink-faint mb-1 font-semibold uppercase tracking-wider">Wiadomość</p>
+                      <p className="text-sm text-ink-muted leading-relaxed whitespace-pre-wrap">{inq.message}</p>
+                    </div>
+
+                    {/* Contact links */}
+                    <div className="flex flex-wrap gap-4 text-sm border-t border-edge pt-3">
+                      {inq.buyer_email && (
+                        <a
+                          href={`mailto:${inq.buyer_email}`}
+                          className="flex items-center gap-1.5 font-medium text-violet hover:underline"
+                        >
+                          <Mail size={13} /> {inq.buyer_email}
+                        </a>
+                      )}
+                      {inq.buyer_phone && (
+                        <a
+                          href={`tel:${inq.buyer_phone}`}
+                          className="flex items-center gap-1.5 font-medium text-violet hover:underline"
+                        >
+                          <Phone size={13} /> {inq.buyer_phone}
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Notes */}
+                    <div className="border-t border-edge pt-3">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-faint uppercase tracking-wider mb-1.5">
+                        <FileText size={11} /> Notatka admina
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={getInqNote(inq)}
+                        onChange={(e) => setInqNotes((prev) => ({ ...prev, [inq.id]: e.target.value }))}
+                        onBlur={() => handleInqNoteBlur(inq)}
+                        placeholder="Notatka wewnętrzna (zapisuje się automatycznie po opuszczeniu pola)…"
+                        className="resize-none text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -276,12 +433,21 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       {isExpanded ? "Ukryj" : "Szczegóły"}
                     </button>
+                    <button
+                      onClick={() => handleDeleteSell(req)}
+                      disabled={isPending}
+                      title="Usuń zgłoszenie"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-edge text-ink-muted hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-40"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </div>
 
                 {/* Expanded details */}
                 {isExpanded && (
                   <div className="border-t border-edge bg-bg-section px-5 py-4 space-y-4">
+                    {/* Stats grid */}
                     <div className="grid sm:grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-xs text-ink-faint mb-0.5">Platforma</p>
@@ -307,14 +473,15 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
 
                     {req.description && req.description !== "Brak opisu" && (
                       <div>
-                        <p className="text-xs text-ink-faint mb-1">Opis sklepu</p>
+                        <p className="text-xs text-ink-faint mb-1 font-semibold uppercase tracking-wider">Opis sklepu</p>
                         <p className="text-sm text-ink-muted leading-relaxed">{req.description}</p>
                       </div>
                     )}
 
+                    {/* Contact */}
                     <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-edge text-sm">
                       <div>
-                        <p className="text-xs text-ink-faint mb-1">Kontakt</p>
+                        <p className="text-xs text-ink-faint mb-1 font-semibold uppercase tracking-wider">Kontakt</p>
                         {req.seller_phone && (
                           <a
                             href={`tel:${req.seller_phone}`}
@@ -333,11 +500,65 @@ export default function AdminTabs({ listings, inquiries, sellRequests, blogPosts
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-ink-faint mb-1">Data zgłoszenia</p>
+                        <p className="text-xs text-ink-faint mb-1 font-semibold uppercase tracking-wider">Data zgłoszenia</p>
                         <p className="text-ink-muted">
                           {new Date(req.created_at).toLocaleString("pl-PL")}
                         </p>
                       </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="border-t border-edge pt-3">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-faint uppercase tracking-wider mb-1.5">
+                        <FileText size={11} /> Notatka admina
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={getSellNote(req)}
+                        onChange={(e) => setSellNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                        onBlur={() => handleSellNoteBlur(req)}
+                        placeholder="Notatka wewnętrzna (zapisuje się automatycznie po opuszczeniu pola)…"
+                        className="resize-none text-sm"
+                      />
+                    </div>
+
+                    {/* Tags */}
+                    <div className="border-t border-edge pt-3">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-faint uppercase tracking-wider mb-1.5">
+                        <Tag size={11} /> Tagi admina
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={getSellTags(req)}
+                          onChange={(e) => setSellTags((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                          placeholder="priorytet, do-kontaktu, vip…"
+                          className="flex-1 text-sm"
+                        />
+                        <button
+                          onClick={() => handleSellTagsSave(req)}
+                          disabled={isPending}
+                          className="flex items-center gap-1.5 rounded-lg bg-violet-lighter text-violet px-3 py-2 text-xs font-semibold hover:bg-violet/15 transition-colors disabled:opacity-40"
+                        >
+                          <Save size={12} /> Zapisz
+                        </button>
+                      </div>
+                      {/* Display saved tags */}
+                      {(() => {
+                        const tags = getSellTags(req).split(",").map((t) => t.trim()).filter(Boolean);
+                        return tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-xs px-2 py-0.5 rounded-full bg-violet-lighter text-violet font-medium"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                 )}

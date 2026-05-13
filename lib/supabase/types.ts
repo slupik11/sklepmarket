@@ -27,6 +27,7 @@ export type Inquiry = {
   message: string;
   created_at: string;
   handled?: boolean;
+  notes?: string;
 };
 
 export type SellRequest = {
@@ -42,6 +43,8 @@ export type SellRequest = {
   seller_phone: string;
   status: SellRequestStatus;
   created_at: string;
+  notes?: string;
+  admin_tags?: string[];
 };
 
 export type BlogPost = {

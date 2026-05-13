@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Plus, Eye, EyeOff, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Eye, EyeOff, Pencil, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { saveBlogPost, toggleBlogPublished, deleteBlogPost } from "@/app/actions/admin";
 import type { BlogPost } from "@/lib/supabase/types";
 
 interface Props {
@@ -22,7 +21,7 @@ type FormData = {
   published: boolean;
 };
 
-const emptyForm: FormData = {
+const empty: FormData = {
   title: "",
   slug: "",
   excerpt: "",
@@ -47,16 +46,16 @@ function slugify(str: string) {
 export default function BlogManager({ posts }: Props) {
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState<FormData>(emptyForm);
-  const [saving, setSaving] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
+  const [form, setForm] = useState<FormData>(empty);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const showForm = creating || editing !== null;
 
   function openCreate() {
-    setForm(emptyForm);
+    setForm(empty);
     setEditing(null);
+    setError(null);
     setCreating(true);
   }
 
@@ -74,28 +73,29 @@ export default function BlogManager({ posts }: Props) {
     });
     setEditing(post);
     setCreating(false);
+    setError(null);
   }
 
   function cancelForm() {
     setCreating(false);
     setEditing(null);
-    setForm(emptyForm);
+    setForm(empty);
+    setError(null);
   }
 
-  function set(field: keyof FormData, value: string | boolean) {
+  function set<K extends keyof FormData>(field: K, value: FormData[K]) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      // auto-generate slug when typing title (only if slug not manually edited)
-      if (field === "title" && !editing && prev.slug === slugify(prev.title)) {
+      if (field === "title" && !editing) {
         next.slug = slugify(value as string);
       }
       return next;
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
+    setError(null);
 
     const payload = {
       title: form.title.trim(),
@@ -103,58 +103,49 @@ export default function BlogManager({ posts }: Props) {
       excerpt: form.excerpt.trim(),
       content: form.content.trim(),
       category: form.category,
-      author_name: form.author_name.trim(),
+      author_name: form.author_name.trim() || "SklepMarket Team",
       featured_image: form.featured_image.trim() || null,
-      tags: form.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       published: form.published,
-      updated_at: new Date().toISOString(),
     };
 
-    if (editing) {
-      await supabase.from("blog_posts").update(payload).eq("id", editing.id);
-    } else {
-      await supabase.from("blog_posts").insert([payload]);
-    }
-
-    setSaving(false);
-    cancelForm();
-    router.refresh();
+    startTransition(async () => {
+      try {
+        await saveBlogPost(editing?.id ?? null, payload);
+        cancelForm();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Błąd zapisu. Sprawdź czy tabela blog_posts istnieje w Supabase.");
+      }
+    });
   }
 
-  async function togglePublish(post: BlogPost) {
-    await supabase
-      .from("blog_posts")
-      .update({ published: !post.published, updated_at: new Date().toISOString() })
-      .eq("id", post.id);
-    router.refresh();
+  function handleToggle(post: BlogPost) {
+    startTransition(() => toggleBlogPublished(post.id, !post.published));
   }
 
-  async function deletePost(post: BlogPost) {
+  function handleDelete(post: BlogPost) {
     if (!confirm(`Usunąć post "${post.title}"?`)) return;
-    await supabase.from("blog_posts").delete().eq("id", post.id);
-    router.refresh();
+    startTransition(() => deleteBlogPost(post.id));
   }
 
-  /* ── FORM VIEW ─────────────────────────────── */
+  /* ── FORM ──────────────────────────────────── */
   if (showForm) {
     return (
       <div className="rounded-xl border border-edge bg-white shadow-card">
         <div className="flex items-center justify-between border-b border-edge px-6 py-4">
-          <h3 className="font-bold text-ink">
-            {editing ? "Edytuj post" : "Nowy post"}
-          </h3>
-          <button
-            onClick={cancelForm}
-            className="text-sm text-ink-muted hover:text-ink transition-colors"
-          >
+          <h3 className="font-bold text-ink">{editing ? "Edytuj post" : "Nowy post"}</h3>
+          <button onClick={cancelForm} className="text-sm text-ink-muted hover:text-ink transition-colors">
             ← Anuluj
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              ⚠ {error}
+            </div>
+          )}
+
           {/* Tytuł */}
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-ink">
@@ -173,7 +164,9 @@ export default function BlogManager({ posts }: Props) {
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-ink">
               Slug (URL){" "}
-              <span className="text-ink-faint font-normal">(auto-generowany z tytułu)</span>
+              <span className="text-ink-faint font-normal text-xs">
+                — auto z tytułu, edytuj ręcznie jeśli chcesz inny
+              </span>
             </label>
             <input
               type="text"
@@ -181,6 +174,11 @@ export default function BlogManager({ posts }: Props) {
               onChange={(e) => set("slug", e.target.value)}
               placeholder="jak-wycenic-sklep-internetowy"
             />
+            {form.slug && (
+              <p className="mt-1 text-xs text-ink-faint">
+                URL: /blog/<strong>{form.slug}</strong>
+              </p>
+            )}
           </div>
 
           {/* Excerpt */}
@@ -193,7 +191,7 @@ export default function BlogManager({ posts }: Props) {
               onChange={(e) => set("excerpt", e.target.value)}
               required
               rows={3}
-              placeholder="Krótkie podsumowanie artykułu (150–200 znaków)..."
+              placeholder="150–200 znaków. Wyświetla się na liście postów i w Google."
               className="resize-none"
             />
           </div>
@@ -207,18 +205,17 @@ export default function BlogManager({ posts }: Props) {
               value={form.content}
               onChange={(e) => set("content", e.target.value)}
               required
-              rows={15}
-              placeholder="<h2>Nagłówek</h2><p>Treść artykułu...</p>"
+              rows={18}
+              placeholder={"<h2>Nagłówek sekcji</h2>\n<p>Treść akapitu...</p>\n<ul>\n  <li>Punkt listy</li>\n</ul>"}
               className="font-mono text-xs resize-y"
             />
-            <p className="mt-1 text-xs text-ink-faint">
-              Dostępne tagi HTML:{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;h2&gt;</code>{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;h3&gt;</code>{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;p&gt;</code>{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;ul&gt;</code>{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;li&gt;</code>{" "}
-              <code className="bg-bg-section px-1 rounded">&lt;strong&gt;</code>
+            <p className="mt-1.5 text-xs text-ink-faint">
+              Obsługiwane tagi:{" "}
+              {["h2", "h3", "p", "ul", "ol", "li", "strong", "em", "a", "blockquote"].map((tag) => (
+                <code key={tag} className="mx-0.5 rounded bg-bg-section px-1">
+                  &lt;{tag}&gt;
+                </code>
+              ))}
             </p>
           </div>
 
@@ -226,10 +223,7 @@ export default function BlogManager({ posts }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-ink">Kategoria</label>
-              <select
-                value={form.category}
-                onChange={(e) => set("category", e.target.value)}
-              >
+              <select value={form.category} onChange={(e) => set("category", e.target.value)}>
                 <option>Poradniki</option>
                 <option>Case Studies</option>
                 <option>Wiadomości</option>
@@ -250,8 +244,7 @@ export default function BlogManager({ posts }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-ink">
-                URL zdjęcia głównego{" "}
-                <span className="text-ink-faint font-normal">(opcjonalnie)</span>
+                URL zdjęcia <span className="text-ink-faint font-normal">(opcjonalnie)</span>
               </label>
               <input
                 type="url"
@@ -263,7 +256,7 @@ export default function BlogManager({ posts }: Props) {
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-ink">
                 Tagi{" "}
-                <span className="text-ink-faint font-normal">(oddzielone przecinkami)</span>
+                <span className="text-ink-faint font-normal">(przecinkami)</span>
               </label>
               <input
                 type="text"
@@ -274,20 +267,25 @@ export default function BlogManager({ posts }: Props) {
             </div>
           </div>
 
-          {/* Opublikuj */}
-          <label className="flex items-center gap-3 cursor-pointer">
+          {/* Publikuj */}
+          <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
               checked={form.published}
               onChange={(e) => set("published", e.target.checked)}
-              className="w-4 h-4 accent-violet"
+              className="h-4 w-4 accent-violet"
             />
             <span className="text-sm font-medium text-ink">Opublikuj od razu</span>
           </label>
 
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="btn-violet !py-2.5 disabled:opacity-60">
-              {saving ? "Zapisywanie..." : editing ? "Zapisz zmiany" : "Utwórz post"}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="btn-violet !py-2.5 disabled:opacity-60 flex items-center gap-2"
+            >
+              {isPending && <Loader2 size={15} className="animate-spin" />}
+              {isPending ? "Zapisywanie..." : editing ? "Zapisz zmiany" : "Utwórz post"}
             </button>
             <button type="button" onClick={cancelForm} className="btn-outline-violet !py-2.5">
               Anuluj
@@ -298,13 +296,13 @@ export default function BlogManager({ posts }: Props) {
     );
   }
 
-  /* ── LIST VIEW ─────────────────────────────── */
+  /* ── LIST ──────────────────────────────────── */
   return (
     <div className="rounded-xl border border-edge bg-white shadow-card">
       <div className="flex items-center justify-between border-b border-edge px-6 py-4">
         <h3 className="font-bold text-ink">
-          Posty na blogu{" "}
-          <span className="ml-1 rounded-full bg-bg-section px-2 py-0.5 text-xs font-medium text-ink-faint">
+          Posty na blogu
+          <span className="ml-2 rounded-full bg-bg-section px-2 py-0.5 text-xs font-medium text-ink-faint">
             {posts.length}
           </span>
         </h3>
@@ -315,16 +313,16 @@ export default function BlogManager({ posts }: Props) {
       </div>
 
       {posts.length === 0 ? (
-        <div className="py-14 text-center text-ink-muted">
-          <p className="mb-3 text-3xl">📝</p>
-          <p>Brak postów. Stwórz pierwszy artykuł.</p>
+        <div className="py-16 text-center">
+          <p className="mb-2 text-3xl">📝</p>
+          <p className="text-ink-muted">Brak postów. Kliknij &ldquo;Nowy post&rdquo;.</p>
         </div>
       ) : (
         <div className="divide-y divide-edge">
           {posts.map((post) => (
-            <div key={post.id} className="flex items-start gap-4 p-5 hover:bg-bg-section transition-colors">
+            <div key={post.id} className="flex items-center gap-3 px-5 py-4 hover:bg-bg-section transition-colors">
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-violet-lighter text-violet">
                     {post.category}
                   </span>
@@ -342,39 +340,41 @@ export default function BlogManager({ posts }: Props) {
                   </span>
                   <span className="text-xs text-ink-faint">{post.views} wyśw.</span>
                 </div>
-                <h4 className="font-semibold text-ink truncate">{post.title}</h4>
-                <p className="text-sm text-ink-muted mt-0.5 line-clamp-1">{post.excerpt}</p>
+                <p className="font-semibold text-ink truncate">{post.title}</p>
+                <p className="text-xs text-ink-muted mt-0.5 line-clamp-1">{post.excerpt}</p>
               </div>
 
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 {post.published && (
                   <a
                     href={`/blog/${post.slug}`}
                     target="_blank"
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors"
                     title="Podgląd"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors"
                   >
                     <ExternalLink size={14} />
                   </a>
                 )}
                 <button
-                  onClick={() => togglePublish(post)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors"
-                  title={post.published ? "Ukryj" : "Opublikuj"}
+                  onClick={() => handleToggle(post)}
+                  disabled={isPending}
+                  title={post.published ? "Ukryj (cofnij publikację)" : "Opublikuj"}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors disabled:opacity-40"
                 >
                   {post.published ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
                 <button
                   onClick={() => openEdit(post)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors"
                   title="Edytuj"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-violet-lighter hover:text-violet transition-colors"
                 >
                   <Pencil size={14} />
                 </button>
                 <button
-                  onClick={() => deletePost(post)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-red-50 hover:text-red-600 transition-colors"
+                  onClick={() => handleDelete(post)}
+                  disabled={isPending}
                   title="Usuń"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
                 >
                   <Trash2 size={14} />
                 </button>

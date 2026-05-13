@@ -30,6 +30,7 @@ create table if not exists inquiries (
   buyer_phone text not null,
   message text not null,
   handled boolean not null default false,
+  notes text default '',
   created_at timestamptz not null default now()
 );
 
@@ -45,6 +46,8 @@ create table if not exists sell_requests (
   seller_email text not null,
   seller_phone text not null,
   status text not null default 'new' check (status in ('new', 'reviewing', 'listed', 'rejected')),
+  notes text default '',
+  admin_tags text[] default '{}',
   created_at timestamptz not null default now()
 );
 
@@ -269,6 +272,15 @@ create policy "Public read published posts" on blog_posts for select using (publ
 create policy "Anon insert blog" on blog_posts for insert with check (true);
 create policy "Anon update blog" on blog_posts for update using (true);
 create policy "Anon delete blog" on blog_posts for delete using (true);
+
+-- ============================
+-- MIGRACJA — notatki i tagi admina
+-- Uruchom to jeśli tabele już istnieją (po poprzednim deploymencie)
+-- ============================
+
+alter table sell_requests add column if not exists notes text default '';
+alter table sell_requests add column if not exists admin_tags text[] default '{}';
+alter table inquiries add column if not exists notes text default '';
 
 -- Seed: 2 przykładowe posty
 insert into blog_posts (slug, title, excerpt, content, category, published, author_name) values
