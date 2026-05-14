@@ -268,10 +268,9 @@ create index if not exists blog_posts_created_at_idx on blog_posts(created_at de
 
 -- RLS
 alter table blog_posts enable row level security;
+-- Public (anon key) can only read published posts
 create policy "Public read published posts" on blog_posts for select using (published = true);
-create policy "Anon insert blog" on blog_posts for insert with check (true);
-create policy "Anon update blog" on blog_posts for update using (true);
-create policy "Anon delete blog" on blog_posts for delete using (true);
+-- Service role bypasses RLS entirely — no extra policies needed for admin client
 
 -- ============================
 -- MIGRACJA — notatki i tagi admina

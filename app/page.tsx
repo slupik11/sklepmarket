@@ -1,5 +1,16 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, TrendingUp, Play, CheckCircle, Lock, Phone } from "lucide-react";
+import {
+  ArrowRight,
+  ShieldCheck,
+  TrendingUp,
+  Play,
+  CheckCircle,
+  Lock,
+  Phone,
+  BarChart2,
+  FileSignature,
+  HeartHandshake,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import ListingCard from "@/components/ListingCard";
 import { formatPriceCompact } from "@/lib/utils";
@@ -59,11 +70,11 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+
       {/* ═══════════════════════════════════
-          HERO — dark purple, full bleed
+          HERO
       ════════════════════════════════════ */}
       <section className="relative dark-gradient-bg overflow-hidden">
-        {/* Subtle grid overlay */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -73,17 +84,11 @@ export default async function HomePage() {
             backgroundSize: "60px 60px",
           }}
         />
-        {/* Radial glow */}
         <div aria-hidden className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-violet/10 blur-[120px] rounded-full" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-24">
-          {/* Badge */}
-          <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-violet-glow/30 bg-violet/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-violet-glow">
-            Platforma premium · Transakcje e-commerce
-          </div>
-
           {/* Headline */}
-          <h1 className="animate-fade-in headline-xl text-white mb-6 max-w-3xl" style={{ animationFillMode: "both" }}>
+          <h1 className="animate-fade-in headline-xl text-white mb-5 max-w-3xl" style={{ animationFillMode: "both" }}>
             Kupuj i sprzedawaj{" "}
             <span className="shimmer-text">gotowe sklepy</span>{" "}
             internetowe
@@ -94,13 +99,13 @@ export default async function HomePage() {
             className="animate-fade-in delay-100 text-lg text-on-dark-faint leading-relaxed max-w-xl mb-10"
             style={{ animationFillMode: "both", opacity: 0 }}
           >
-            Sprawdzone biznesy e-commerce. Pełna instrukcja, film szkoleniowy, wsparcie
-            na każdym etapie transakcji. Dla sprzedających — dyskrecja i NDA.
+            Sprawdzone biznesy e-commerce z udokumentowanymi przychodami. Pełna dokumentacja,
+            wsparcie po transakcji i NDA dla sprzedających.
           </p>
 
           {/* CTAs */}
           <div
-            className="animate-fade-in delay-200 flex flex-wrap gap-3 mb-16"
+            className="animate-fade-in delay-200 flex flex-wrap gap-3 mb-14"
             style={{ animationFillMode: "both", opacity: 0 }}
           >
             <Link href="/oferty" className="btn-white-on-dark">
@@ -111,9 +116,9 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          {/* Stats row — inside dark hero */}
+          {/* Stats row */}
           <div
-            className="animate-fade-in delay-300 grid grid-cols-3 divide-x divide-on-dark-faint/20 border border-on-dark-faint/20 rounded-xl overflow-hidden"
+            className="animate-fade-in delay-300 grid grid-cols-3 divide-x divide-on-dark-faint/20 border border-on-dark-faint/20 rounded-xl overflow-hidden max-w-lg"
             style={{ animationFillMode: "both", opacity: 0 }}
           >
             {[
@@ -121,11 +126,11 @@ export default async function HomePage() {
               { value: formatPriceCompact(stats.value), label: "Łączna wartość" },
               { value: stats.verified.toString(), label: "Zweryfikowanych" },
             ].map((s, i) => (
-              <div key={i} className="card-dark px-4 py-4 sm:px-7 sm:py-5">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-on-dark-muted mb-1.5">
+              <div key={i} className="card-dark px-4 py-4 sm:px-6 sm:py-5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-on-dark-muted mb-1">
                   {s.label}
                 </p>
-                <p className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-none">
+                <p className="text-lg sm:text-xl font-bold tracking-tight text-white leading-none">
                   {s.value}
                 </p>
               </div>
@@ -192,7 +197,6 @@ export default async function HomePage() {
 
             {/* Dla sprzedających */}
             <div className="section-bg px-8 py-14 lg:px-12 relative overflow-hidden">
-              {/* Subtle violet accent */}
               <div aria-hidden className="absolute top-0 right-0 w-40 h-40 bg-violet/5 rounded-full blur-2xl pointer-events-none" />
               <div className="relative">
                 <div className="mb-1 text-xs font-bold uppercase tracking-widest text-violet">Sprzedający</div>
@@ -207,7 +211,7 @@ export default async function HomePage() {
                 <div className="space-y-3 mb-8">
                   {[
                     { step: "01", text: "Wypełniasz krótki formularz" },
-                    { step: "02", text: "Oddzwaniamy do Ciebie" },
+                    { step: "02", text: "Oddzwaniamy do Ciebie w 24h" },
                     { step: "03", text: "Umawiamy spotkanie" },
                     { step: "04", text: "Podpisujemy NDA" },
                     { step: "05", text: "Działamy razem" },
@@ -273,19 +277,35 @@ export default async function HomePage() {
               </h2>
               <p className="text-ink-muted leading-relaxed">
                 Mamy wieloletnie doświadczenie w branży e-commerce. Wiemy czego szukać,
-                jak weryfikować dane i jak przeprowadzać transakcje które działają dla obu stron.
+                jak weryfikować dane i jak przeprowadzać transakcje, które działają dla obu stron.
               </p>
             </div>
 
             <div className="lg:col-span-3 grid sm:grid-cols-2 gap-4">
               {[
-                { icon: "🔐", title: "NDA przy każdej transakcji", desc: "Dane sprzedającego i kupującego są chronione umową o zachowaniu poufności." },
-                { icon: "📊", title: "Weryfikacja finansów", desc: "Sprawdzamy Google Analytics, przychody i historię zamówień przed publikacją." },
-                { icon: "🎓", title: "Instrukcja + film 2h", desc: "Kupujący dostaje szczegółowy kurs jak przejąć i prowadzić sklep od pierwszego dnia." },
-                { icon: "🤝", title: "Wsparcie post-transakcyjne", desc: "Jesteśmy dostępni przez 30 dni po finalizacji — pytania, problemy, konfiguracja." },
+                {
+                  icon: <FileSignature size={20} className="text-violet" />,
+                  title: "NDA przy każdej transakcji",
+                  desc: "Dane sprzedającego i kupującego są chronione umową o zachowaniu poufności.",
+                },
+                {
+                  icon: <BarChart2 size={20} className="text-violet" />,
+                  title: "Weryfikacja finansów",
+                  desc: "Sprawdzamy Google Analytics, przychody i historię zamówień przed publikacją.",
+                },
+                {
+                  icon: <Play size={20} className="text-violet" />,
+                  title: "Instrukcja + film 2h",
+                  desc: "Kupujący dostaje szczegółowy kurs jak przejąć i prowadzić sklep od pierwszego dnia.",
+                },
+                {
+                  icon: <HeartHandshake size={20} className="text-violet" />,
+                  title: "Wsparcie post-transakcyjne",
+                  desc: "Jesteśmy dostępni przez 30 dni po finalizacji — pytania, problemy, konfiguracja.",
+                },
               ].map((item) => (
                 <div key={item.title} className="card p-5 hover:border-violet/30 hover:shadow-card-hover transition-all duration-200">
-                  <div className="text-2xl mb-3">{item.icon}</div>
+                  <div className="mb-3">{item.icon}</div>
                   <h3 className="font-bold text-ink text-sm mb-1.5">{item.title}</h3>
                   <p className="text-sm text-ink-muted leading-relaxed">{item.desc}</p>
                 </div>
@@ -335,7 +355,7 @@ export default async function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════
-          SEO CONTENT — tekst dla robotów
+          SEO CONTENT
       ════════════════════════════════════ */}
       <section className="border-t border-edge">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:px-8">

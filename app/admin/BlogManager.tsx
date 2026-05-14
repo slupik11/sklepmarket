@@ -141,8 +141,13 @@ export default function BlogManager({ posts }: Props) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              ⚠ {error}
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-2">
+              <p className="font-semibold">⚠ {error}</p>
+              {(error.includes("blog_posts") || error.includes("schema cache") || error.includes("relation")) && (
+                <div className="mt-2 p-3 bg-white rounded border border-red-100 text-xs font-mono text-red-900 whitespace-pre-wrap leading-relaxed">
+                  {`-- Uruchom w Supabase SQL Editor:\n-- https://supabase.com/dashboard/project/xxmcomvkuaumobxxkljl/sql/new\n\ncreate table if not exists blog_posts (\n  id uuid primary key default gen_random_uuid(),\n  slug text unique not null,\n  title text not null,\n  excerpt text not null,\n  content text not null,\n  featured_image text,\n  author_name text not null default 'SklepMarket Team',\n  category text not null default 'Poradniki',\n  tags text[] default '{}',\n  published boolean default false,\n  views integer default 0,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\nalter table blog_posts enable row level security;\ncreate policy "Public read published posts" on blog_posts for select using (published = true);`}
+                </div>
+              )}
             </div>
           )}
 
@@ -267,16 +272,34 @@ export default function BlogManager({ posts }: Props) {
             </div>
           </div>
 
-          {/* Publikuj */}
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.published}
-              onChange={(e) => set("published", e.target.checked)}
-              className="h-4 w-4 accent-violet"
-            />
-            <span className="text-sm font-medium text-ink">Opublikuj od razu</span>
-          </label>
+          {/* Status */}
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-ink">Status publikacji</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => set("published", false)}
+                className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  !form.published
+                    ? "border-violet bg-violet-lighter text-violet"
+                    : "border-edge text-ink-muted hover:bg-bg-section"
+                }`}
+              >
+                Szkic
+              </button>
+              <button
+                type="button"
+                onClick={() => set("published", true)}
+                className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  form.published
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                    : "border-edge text-ink-muted hover:bg-bg-section"
+                }`}
+              >
+                Opublikowany
+              </button>
+            </div>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
